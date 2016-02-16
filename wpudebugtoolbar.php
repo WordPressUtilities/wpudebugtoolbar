@@ -3,7 +3,7 @@
 /*
 Plugin Name: WP Utilities Debug toolbar
 Description: Display a debug toolbar for developers.
-Version: 0.7
+Version: 0.7.1
 Author: Darklg
 Author URI: http://darklg.me/
 License: MIT License
@@ -11,7 +11,9 @@ License URI: http://opensource.org/licenses/MIT
 */
 
 class WPUDebugToolbar {
-    function __construct() {
+    public $plugin_version = '0.7.1';
+
+    public function __construct() {
         add_action('init', array(&$this,
             'init'
         ));
@@ -19,8 +21,6 @@ class WPUDebugToolbar {
 
     public function init() {
         if (current_user_can('administrator') && !is_admin()) {
-            $this->assets_dir = 'assets/';
-            $this->assets_url = 'assets/';
             $this->load_hooks();
         }
     }
@@ -28,15 +28,15 @@ class WPUDebugToolbar {
     public function load_hooks() {
         add_action('wp_footer', array(&$this,
             'launch_bar'
-        ) , 999);
+        ), 999);
         add_action('wp_enqueue_scripts', array(&$this,
             'enqueue_assets'
-        ) , 1000);
+        ), 1000);
     }
 
-    function enqueue_assets() {
-        wp_register_script('wpudebugtoolbar_scripts', plugins_url('assets/script.js', __FILE__) , array() , '0.6', 1);
-        wp_register_style('wpudebugtoolbar_style', plugins_url('assets/style.css', __FILE__));
+    public function enqueue_assets() {
+        wp_register_script('wpudebugtoolbar_scripts', plugins_url('assets/script.js', __FILE__), array(), $this->plugin_version, 1);
+        wp_register_style('wpudebugtoolbar_style', plugins_url('assets/style.css', __FILE__), array(), $this->plugin_version);
         wp_enqueue_script('wpudebugtoolbar_scripts');
         wp_enqueue_style('wpudebugtoolbar_style');
     }
@@ -45,7 +45,7 @@ class WPUDebugToolbar {
       Bar
     ---------------------------------------------------------- */
 
-    function launch_bar() {
+    public function launch_bar() {
         global $template, $pagenow, $wp_filter, $wp_actions;
         if ($pagenow == 'wp-login.php') {
             return;
@@ -72,6 +72,7 @@ class WPUDebugToolbar {
                 continue;
             }
             echo '<strong>' . $hook . ': </strong>';
+            ksort($hooks, SORT_NATURAL);
             foreach ($hooks as $priority => $hooked_func) {
                 echo '<br /> -<em>' . $priority . '</em> : ' . implode(', ', array_keys($hooked_func));
             }
@@ -94,7 +95,7 @@ class WPUDebugToolbar {
         echo ' <em>&bull;</em> ';
 
         // Memory used
-        echo 'Memory : <strong>' . round(memory_get_peak_usage() / (1024 * 1024) , 3) . '</strong> mb';
+        echo 'Memory : <strong>' . round(memory_get_peak_usage() / (1024 * 1024), 3) . '</strong> mb';
         echo ' <em>&bull;</em> ';
 
         // Queries
@@ -122,4 +123,3 @@ class WPUDebugToolbar {
 }
 
 $WPUDebugToolbar = new WPUDebugToolbar();
-
