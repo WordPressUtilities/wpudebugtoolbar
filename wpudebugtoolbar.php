@@ -3,7 +3,7 @@
 /*
 Plugin Name: WP Utilities Debug toolbar
 Description: Display a debug toolbar for developers.
-Version: 0.7.1
+Version: 0.7.2
 Author: Darklg
 Author URI: http://darklg.me/
 License: MIT License
@@ -11,7 +11,7 @@ License URI: http://opensource.org/licenses/MIT
 */
 
 class WPUDebugToolbar {
-    public $plugin_version = '0.7.1';
+    public $plugin_version = '0.7.2';
 
     public function __construct() {
         add_action('init', array(&$this,
@@ -72,8 +72,12 @@ class WPUDebugToolbar {
                 continue;
             }
             echo '<strong>' . $hook . ': </strong>';
-            ksort($hooks, SORT_NATURAL);
-            foreach ($hooks as $priority => $hooked_func) {
+            $hookstosort = $hooks;
+            if(is_object($hooks)){
+                $hookstosort = $hooks->callbacks;
+            }
+            ksort($hookstosort, SORT_NATURAL);
+            foreach ($hookstosort as $priority => $hooked_func) {
                 echo '<br /> -<em>' . $priority . '</em> : ' . implode(', ', array_keys($hooked_func));
             }
             echo '<br />';
