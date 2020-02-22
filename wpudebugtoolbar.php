@@ -3,7 +3,7 @@
 /*
 Plugin Name: WP Utilities Debug toolbar
 Description: Display a debug toolbar for developers.
-Version: 0.7.2
+Version: 0.8.0
 Author: Darklg
 Author URI: http://darklg.me/
 License: MIT License
@@ -11,22 +11,41 @@ License URI: http://opensource.org/licenses/MIT
 */
 
 class WPUDebugToolbar {
-    public $plugin_version = '0.7.2';
+    public $plugin_version = '0.8.0';
+
+    private $hooks = array(
+        'plugins_loaded',
+        'init',
+        'wp',
+        'get_header',
+        'wp_head',
+        'wp_body_open',
+        'wp_footer'
+    );
 
     public function __construct() {
+        if (is_admin()) {
+            return;
+        }
+        $this->start = microtime(true);
+        $this->events = array();
+        foreach ($this->hooks as $hook) {
+            add_action($hook, array(&$this, 'start_marker'), 0);
+            add_action($hook, array(&$this, 'end_marker'), 9999999999);
+        }
+        add_action('shutdown', array(&$this, 'end_marker'), 9999999999);
+        add_action('shutdown', array(&$this, 'log'), 9999999999);
+
         add_action('init', array(&$this,
             'init'
         ));
     }
 
     public function init() {
-        if (current_user_can('administrator') && !is_admin()) {
-            $this->load_hooks();
+        if (!is_user_logged_in()) {
+            return;
         }
-    }
-
-    public function load_hooks() {
-        add_action('wp_footer', array(&$this,
+        add_action('shutdown', array(&$this,
             'launch_bar'
         ), 999);
         add_action('wp_enqueue_scripts', array(&$this,
@@ -39,6 +58,34 @@ class WPUDebugToolbar {
         wp_register_style('wpudebugtoolbar_style', plugins_url('assets/style.css', __FILE__), array(), $this->plugin_version);
         wp_enqueue_script('wpudebugtoolbar_scripts');
         wp_enqueue_style('wpudebugtoolbar_style');
+    }
+
+    /* ----------------------------------------------------------
+      Log
+    ---------------------------------------------------------- */
+
+    public function start_marker() {
+        $this->log_event(current_filter(), 'start');
+    }
+
+    public function end_marker() {
+        $this->log_event(current_filter(), 'end');
+    }
+
+    public function log_event($name, $status) {
+        if (function_exists('is_user_logged_in') && !is_user_logged_in()) {
+            return;
+        }
+        if (!isset($this->events[$name])) {
+            $this->events[$name] = array();
+        }
+        $this->events[$name][$status] = microtime(true) - $this->start;
+        if (SAVEQUERIES) {
+            global $wpdb;
+            $this->events[$name][$status . '-nbqueries'] = count($wpdb->queries);
+        }
+        $this->events[$name][$status . '-memory'] = round(memory_get_usage() / 1024);
+
     }
 
     /* ----------------------------------------------------------
@@ -65,6 +112,14 @@ class WPUDebugToolbar {
             echo '</div>';
         }
 
+        // All timing
+        $this->end_marker();
+        echo '<div id="wputh-debug-timing">';
+        echo "<pre>";
+        print_r($this->events);
+        echo '</pre>';
+        echo '</div>';
+
         // All hooks
         echo '<div id="wputh-debug-hooks">';
         foreach ($wp_filter as $hook => $hooks) {
@@ -73,7 +128,7 @@ class WPUDebugToolbar {
             }
             echo '<strong>' . $hook . ': </strong>';
             $hookstosort = $hooks;
-            if(is_object($hooks)){
+            if (is_object($hooks)) {
                 $hookstosort = $hooks->callbacks;
             }
             ksort($hookstosort, SORT_NATURAL);
@@ -119,6 +174,11 @@ class WPUDebugToolbar {
         echo ' <em>&bull;</em> ';
         echo '<span class="wputh-toggle" id="wputh-debug-display-hooks">Display hooks</span>';
         echo '<span class="wputh-toggle" id="wputh-debug-hide-hooks">Hide hooks</span>';
+
+        // giming
+        echo ' <em>&bull;</em> ';
+        echo '<span class="wputh-toggle" id="wputh-debug-display-timing">Display timing</span>';
+        echo '<span class="wputh-toggle" id="wputh-debug-hide-timing">Hide timing</span>';
 
         echo '</div>';
 

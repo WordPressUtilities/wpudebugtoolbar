@@ -29,6 +29,16 @@
                 toolbar.setAttribute('data-show-hooks', '');
             };
         }
+
+        /* Debug timing */
+        if ($('wputh-debug-display-timing')) {
+            $('wputh-debug-display-timing').onclick = function() {
+                toolbar.setAttribute('data-show-timing', '1');
+            };
+            $('wputh-debug-hide-timing').onclick = function() {
+                toolbar.setAttribute('data-show-timing', '');
+            };
+        }
     });
 
 }());
