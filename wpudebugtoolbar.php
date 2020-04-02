@@ -3,7 +3,7 @@
 /*
 Plugin Name: WP Utilities Debug toolbar
 Description: Display a debug toolbar for developers.
-Version: 0.8.0
+Version: 0.8.1
 Author: Darklg
 Author URI: http://darklg.me/
 License: MIT License
@@ -11,7 +11,7 @@ License URI: http://opensource.org/licenses/MIT
 */
 
 class WPUDebugToolbar {
-    public $plugin_version = '0.8.0';
+    public $plugin_version = '0.8.1';
 
     private $hooks = array(
         'plugins_loaded',
@@ -34,7 +34,6 @@ class WPUDebugToolbar {
             add_action($hook, array(&$this, 'end_marker'), 9999999999);
         }
         add_action('shutdown', array(&$this, 'end_marker'), 9999999999);
-        add_action('shutdown', array(&$this, 'log'), 9999999999);
 
         add_action('init', array(&$this,
             'init'
